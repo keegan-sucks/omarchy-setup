@@ -68,7 +68,11 @@ install_wallpapers() {
 
 install_prune_hook() {
   step "Installing theme-set hook to hide stock wallpapers"
-  local tmp; tmp="$(mktemp)"
+  # omarchy-hook-install keeps the source file's basename, so build it with the
+  # final name inside a temp dir (a bare mktemp file would install as tmp.XXXX
+  # and re-runs would pile up new copies).
+  local tmpd; tmpd="$(mktemp -d)"
+  local tmp="$tmpd/prune-stock-backgrounds.sh"
   cat > "$tmp" <<'HOOK'
 #!/bin/bash
 # Installed by omarchy-setup. For any theme the user has their own wallpapers
@@ -105,7 +109,7 @@ HOOK
   else
     warn "Could not install theme-set hook"
   fi
-  rm -f "$tmp"
+  rm -rf "$tmpd"
 }
 
 # ---- plugin install helper ------------------------------------------------
