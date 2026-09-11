@@ -27,15 +27,21 @@ your password.
    Themes you haven't customized keep their stock wallpapers. Fully reversible:
    delete `~/.config/omarchy/hooks/theme-set.d/prune-stock-backgrounds.sh` and
    the next theme switch brings the stock ones back.
-3. **[Wallpaper Roulette](https://github.com/keegan-sucks/omarchy-wallpaper-roulette)** —
+3. **Cream Rosé Pine** — installs a same-slug user theme overlay
+   (`themes/rose-pine/colors.toml` → `~/.config/omarchy/themes/rose-pine/`) that
+   warms the stock light backgrounds (`#faf4ed` etc.) into a soft cream that's
+   easier on the eyes, and re-applies it if Rosé Pine is the active theme. The
+   rest of the palette (foreground, accent, ANSI colors) is stock Rosé Pine.
+   Reversible: delete that file and run `omarchy theme set rose-pine`.
+4. **[Wallpaper Roulette](https://github.com/keegan-sucks/omarchy-wallpaper-roulette)** —
    installs the plugin and points it at your wallpapers, rotating every 30
    minutes and switching the theme to match each wallpaper.
-4. **[Flowstate](https://github.com/keegan-sucks/omarchy-flowstate)** — installs
+5. **[Flowstate](https://github.com/keegan-sucks/omarchy-flowstate)** — installs
    the focus-timer plugin.
-5. **Firefox over Chromium** — ensures Firefox is installed and the default
+6. **Firefox over Chromium** — ensures Firefox is installed and the default
    browser, removes Chromium-backed web apps (Discord, etc.), and removes
    Chromium if present.
-6. **Community plugins** — installs
+7. **Community plugins** — installs
    [AirPods](https://github.com/thisisgm/omarchy-pods),
    [Omamail](https://github.com/huacnlee/omamail), and
    [MenuVitals](https://github.com/ierror/menuvitals).
