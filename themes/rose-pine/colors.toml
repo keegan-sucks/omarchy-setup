@@ -1,0 +1,44 @@
+# Rosé Pine (Dawn / light) — Keegan's cream overlay.
+#
+# Only the background family and neutral tones are changed: the stock light
+# backgrounds (#faf4ed etc.) read as bright white and are hard on the eyes, so
+# they are warmed into a soft cream. Everything else — foreground, accent, and
+# the ANSI palette — is stock Rosé Pine, so the theme keeps its identity.
+#
+# This file overlays the stock theme: `omarchy theme set rose-pine` copies the
+# packaged theme first, then lets a hand-written user theme of the same slug
+# (this one, installed to ~/.config/omarchy/themes/rose-pine/) win on top.
+# Installed by omarchy-setup; edit the cream values below to taste.
+
+mode = "light"
+
+accent = "#56949f"
+selection = "#ddd5bd"
+muted = "#ccc5b2"
+
+# Cream backgrounds (were #faf4ed / #ede7e1 / #e1dbd5 / #f2e9e1)
+background = "#f7eecf"
+dark_background = "#ebe2c4"
+darker_background = "#dfd6b9"
+lighter_background = "#f0e4c4"
+
+foreground = "#575279"
+dark_foreground = "#9893a5"
+light_foreground = "#6e6a86"
+bright_foreground = "#575279"
+
+red = "#b4637a"
+yellow = "#ea9d34"
+orange = "#cf8057"
+green = "#286983"
+cyan = "#d7827e"
+blue = "#56949f"
+magenta = "#907aa9"
+brown = "#67402b"
+
+bright_red = "#b4637a"
+bright_yellow = "#ea9d34"
+bright_green = "#286983"
+bright_cyan = "#d7827e"
+bright_blue = "#56949f"
+bright_magenta = "#907aa9"
