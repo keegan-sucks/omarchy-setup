@@ -30,6 +30,7 @@ THEME_OVERLAY_DEST="$HOME/.config/omarchy/themes/rose-pine/colors.toml"
 PLUGINS=(
   "https://github.com/thisisgm/omarchy-pods|io.github.thisisgm.omapods|AirPods (omapods)"
   "https://github.com/keegan-sucks/rss-feeder|io.github.keegan-sucks.rss-feeder|RSS-Feeder"
+  "https://github.com/keegan-sucks/omarchy-lookup|io.github.keegan-sucks.lookup|Look Up"
   "https://github.com/ierror/menuvitals|io.github.ierror.menuvitals|MenuVitals"
 )
 
@@ -260,7 +261,7 @@ setup_browser() {
 # ---- 5-7. community plugins ----------------------------------------------
 
 install_community_plugins() {
-  step "Installing AirPods, RSS-Feeder, and MenuVitals plugins"
+  step "Installing AirPods, RSS-Feeder, Look Up, and MenuVitals plugins"
   local entry url id label
   for entry in "${PLUGINS[@]}"; do
     IFS='|' read -r url id label <<<"$entry"
