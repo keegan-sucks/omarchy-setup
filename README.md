@@ -46,11 +46,12 @@ your password.
    Chromium if present.
 8. **Community plugins** — installs
    [AirPods](https://github.com/thisisgm/omarchy-pods),
-   [Omamail](https://github.com/huacnlee/omamail), and
+   [RSS-Feeder](https://github.com/keegan-sucks/rss-feeder) (my fork of
+   [rss-reeder](https://github.com/sanjyay/rss-reeder), with YouTube Shorts
+   filtering and per-feed category editing), and
    [MenuVitals](https://github.com/ierror/menuvitals).
 
-Omamail and AirPods need a one-time setup of their own — see each plugin's
-README.
+AirPods needs a one-time setup of its own — see the plugin's README.
 
 ## License
 

@@ -29,7 +29,7 @@ THEME_OVERLAY_DEST="$HOME/.config/omarchy/themes/rose-pine/colors.toml"
 # Community plugins: "repo-url|id|label"
 PLUGINS=(
   "https://github.com/thisisgm/omarchy-pods|io.github.thisisgm.omapods|AirPods (omapods)"
-  "https://github.com/huacnlee/omamail|omamail|Omamail"
+  "https://github.com/keegan-sucks/rss-feeder|io.github.keegan-sucks.rss-feeder|RSS-Feeder"
   "https://github.com/ierror/menuvitals|io.github.ierror.menuvitals|MenuVitals"
 )
 
@@ -260,7 +260,7 @@ setup_browser() {
 # ---- 5-7. community plugins ----------------------------------------------
 
 install_community_plugins() {
-  step "Installing AirPods, Omamail, and MenuVitals plugins"
+  step "Installing AirPods, RSS-Feeder, and MenuVitals plugins"
   local entry url id label
   for entry in "${PLUGINS[@]}"; do
     IFS='|' read -r url id label <<<"$entry"
@@ -284,7 +284,7 @@ main() {
   omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
   step "Done"
   printf '%sReload the bar if widgets are not visible:%s omarchy restart shell\n' "$c_dim" "$c_off"
-  printf '%sNotes:%s Omamail and AirPods need their own one-time setup (see each plugin README).\n' "$c_dim" "$c_off"
+  printf '%sNotes:%s AirPods needs its own one-time setup (see the plugin README).\n' "$c_dim" "$c_off"
 }
 
 main "$@"
