@@ -50,6 +50,11 @@ your password.
    [rss-reeder](https://github.com/sanjyay/rss-reeder), with YouTube Shorts
    filtering and per-feed category editing), and
    [MenuVitals](https://github.com/ierror/menuvitals).
+7. **Steam window** — writes `~/.config/hypr/steam.lua` to pin Steam's desktop
+   UI scale (Omarchy lets it auto-inflate on the HiDPI laptop panel) and tile
+   the main window instead of the stock small floating box. Restart Steam
+   afterwards for the new scale to apply; adjust the scale in the file or in
+   Steam > Settings > Accessibility.
 
 AirPods needs a one-time setup of its own — see the plugin's README.
 
