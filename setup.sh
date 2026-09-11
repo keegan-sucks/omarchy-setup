@@ -150,6 +150,29 @@ install_theme_overlay() {
   fi
 }
 
+# ---- 1d. make the top bar opaque ------------------------------------------
+
+set_bar_opaque() {
+  step "Making the top bar opaque"
+  # A transparent bar renders its icons over the wallpaper, which makes them
+  # unreadable on light themes. Force a solid, themed bar background.
+  local shell_json="$HOME/.config/omarchy/shell.json"
+  [[ -f $shell_json ]] || { skip "No shell.json yet — Omarchy default is already opaque"; return 0; }
+  if [[ "$(jq -r '.bar.transparent' "$shell_json" 2>/dev/null)" == "false" ]]; then
+    skip "Bar already opaque"
+    return 0
+  fi
+  local tmp; tmp="$(mktemp)"
+  if jq '.bar.transparent = false' "$shell_json" > "$tmp" 2>/dev/null && [[ -s $tmp ]]; then
+    cp "$shell_json" "$shell_json.bak.$(date +%s)"
+    mv "$tmp" "$shell_json"
+    ok "bar.transparent = false"
+  else
+    rm -f "$tmp"
+    warn "Could not set bar.transparent (edit shell.json by hand)"
+  fi
+}
+
 # ---- plugin install helper ------------------------------------------------
 
 plugin_installed() { omarchy plugin list --json 2>/dev/null | jq -e --arg id "$1" 'any(.[]; .id == $id)' >/dev/null 2>&1; }
@@ -253,6 +276,7 @@ main() {
   install_wallpapers
   install_prune_hook
   install_theme_overlay
+  set_bar_opaque
   install_roulette
   install_flowstate
   setup_browser
