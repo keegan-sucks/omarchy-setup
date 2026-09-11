@@ -37,7 +37,9 @@ your password.
    Chromium if present.
 6. **Community plugins** — installs
    [AirPods](https://github.com/thisisgm/omarchy-pods),
-   [Omamail](https://github.com/huacnlee/omamail), and
+   [RSS-Feeder](https://github.com/keegan-sucks/rss-feeder) (my fork of
+   [rss-reeder](https://github.com/sanjyay/rss-reeder), with YouTube Shorts
+   filtering and per-feed category editing), and
    [MenuVitals](https://github.com/ierror/menuvitals).
 7. **Steam window** — writes `~/.config/hypr/steam.lua` to pin Steam's desktop
    UI scale (Omarchy lets it auto-inflate on the HiDPI laptop panel) and tile
@@ -45,8 +47,7 @@ your password.
    afterwards for the new scale to apply; adjust the scale in the file or in
    Steam > Settings > Accessibility.
 
-Omamail and AirPods need a one-time setup of their own — see each plugin's
-README.
+AirPods needs a one-time setup of its own — see the plugin's README.
 
 ## License
 
