@@ -207,6 +207,55 @@ install_community_plugins() {
   done
 }
 
+# ---- 8. steam: sane UI scale + tiled main window -------------------------
+
+configure_steam() {
+  step "Configuring Steam window (UI scale + tiled main window)"
+  local hypr_dir="$HOME/.config/hypr"
+  local steam_lua="$hypr_dir/steam.lua"
+  local hyprland_lua="$hypr_dir/hyprland.lua"
+  if [[ ! -d $hypr_dir ]]; then
+    skip "No ~/.config/hypr (not a Hyprland/Omarchy setup?)"
+    return 0
+  fi
+
+  # Managed override, loaded after Omarchy's defaults. Omarchy floats the main
+  # Steam window small (1100x700) and lets Steam auto-inflate its UI scale on a
+  # HiDPI panel; this pins the scale and tiles the main window. Overwriting is
+  # safe — the whole file is ours.
+  cat > "$steam_lua" <<'LUA'
+-- Managed by omarchy-setup. Loaded after Omarchy's defaults, overriding the
+-- stock Steam rules in /usr/share/omarchy/default/hypr/apps/steam.lua.
+
+-- Pin Steam's desktop UI scale. 1 = 100% (right for a 1080p monitor). Bump to
+-- "1.25"/"1.5" if it feels too small on a HiDPI laptop panel. Some Steam builds
+-- ignore this env var; the same knob lives in Steam > Settings > Accessibility.
+hl.env("STEAM_FORCE_DESKTOPUI_SCALING", "1")
+
+-- Tile the main Steam window so it fills the workspace instead of a small
+-- floating box. Child windows (Friends List, Settings) stay floating.
+o.window({ class = "steam", title = "^Steam$" }, { tile = true })
+LUA
+  ok "Wrote ${steam_lua/#$HOME/\~}"
+
+  # Ensure hyprland.lua loads it (idempotent).
+  if grep -qF 'require("hypr.steam")' "$hyprland_lua" 2>/dev/null; then
+    skip 'hyprland.lua already loads hypr.steam'
+  elif grep -qF 'require("hypr.autostart")' "$hyprland_lua" 2>/dev/null; then
+    cp "$hyprland_lua" "$hyprland_lua.bak.$(date +%s)"
+    sed -i '/require("hypr.autostart")/a require("hypr.steam")' "$hyprland_lua"
+    ok 'Added require("hypr.steam") to hyprland.lua'
+  elif [[ -f $hyprland_lua ]]; then
+    cp "$hyprland_lua" "$hyprland_lua.bak.$(date +%s)"
+    printf '\nrequire("hypr.steam")\n' >> "$hyprland_lua"
+    ok 'Appended require("hypr.steam") to hyprland.lua'
+  else
+    warn "No hyprland.lua found — add require(\"hypr.steam\") yourself"
+  fi
+
+  hyprctl reload >/dev/null 2>&1 || true
+}
+
 # ---- run ------------------------------------------------------------------
 
 main() {
@@ -218,10 +267,12 @@ main() {
   install_flowstate
   setup_browser
   install_community_plugins
+  configure_steam
   omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
   step "Done"
   printf '%sReload the bar if widgets are not visible:%s omarchy restart shell\n' "$c_dim" "$c_off"
   printf '%sNotes:%s Omamail and AirPods need their own one-time setup (see each plugin README).\n' "$c_dim" "$c_off"
+  printf '%s       %s Fully restart Steam (%ssteam -shutdown%s) for the new UI scale to apply.\n' "$c_dim" "$c_off" "$c_dim" "$c_off"
 }
 
 main "$@"
