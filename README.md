@@ -48,7 +48,10 @@ your password.
    [AirPods](https://github.com/thisisgm/omarchy-pods),
    [RSS-Feeder](https://github.com/keegan-sucks/rss-feeder) (my fork of
    [rss-reeder](https://github.com/sanjyay/rss-reeder), with YouTube Shorts
-   filtering and per-feed category editing), and
+   filtering and per-feed category editing),
+   [Look Up](https://github.com/keegan-sucks/omarchy-lookup) (macOS-style
+   dictionary popup — select a word, hit a hotkey, see its definition; ships
+   Webster's 1913 offline), and
    [MenuVitals](https://github.com/ierror/menuvitals).
 7. **Steam window** — writes `~/.config/hypr/steam.lua` to pin Steam's desktop
    UI scale (Omarchy lets it auto-inflate on the HiDPI laptop panel) and tile
