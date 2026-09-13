@@ -27,12 +27,13 @@ your password.
    Themes you haven't customized keep their stock wallpapers. Fully reversible:
    delete `~/.config/omarchy/hooks/theme-set.d/prune-stock-backgrounds.sh` and
    the next theme switch brings the stock ones back.
-3. **Cream Rosé Pine** — installs a same-slug user theme overlay
-   (`themes/rose-pine/colors.toml` → `~/.config/omarchy/themes/rose-pine/`) that
-   warms the stock light backgrounds (`#faf4ed` etc.) into a soft cream that's
-   easier on the eyes, and re-applies it if Rosé Pine is the active theme. The
-   rest of the palette (foreground, accent, ANSI colors) is stock Rosé Pine.
-   Reversible: delete that file and run `omarchy theme set rose-pine`.
+3. **Cream light themes** — installs same-slug user theme overlays
+   (`themes/<slug>/colors.toml` → `~/.config/omarchy/themes/<slug>/`) that warm
+   the stock light backgrounds into a soft cream that's easier on the eyes, and
+   re-applies whichever one is the active theme. Currently covers **Rosé Pine**
+   (`#faf4ed` → cream) and **Catppuccin Latte** (`#eff1f5` → cream). The rest of
+   each palette (foreground, accent, ANSI colors) is left stock. Reversible:
+   delete the overlay file and run `omarchy theme set <slug>`.
 4. **Opaque top bar** — sets `bar.transparent = false` in `shell.json`. A
    transparent bar renders its icons over the wallpaper, which makes them
    unreadable on light themes; a solid themed background keeps them visible.
