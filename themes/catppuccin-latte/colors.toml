@@ -1,0 +1,46 @@
+# Catppuccin Latte (light) — Keegan's cream overlay.
+#
+# Only the background family and neutral tones are changed: the stock Latte
+# backgrounds (#eff1f5 etc.) read as a cool, bright white and are hard on the
+# eyes, so they are warmed into a soft cream. Everything else — foreground,
+# accent, and the ANSI palette — is stock Catppuccin Latte, so the theme keeps
+# its identity. The cream family matches Keegan's cream Rosé Pine overlay.
+#
+# This file overlays the stock theme: `omarchy theme set catppuccin-latte`
+# copies the packaged theme first, then lets a hand-written user theme of the
+# same slug (this one, installed to ~/.config/omarchy/themes/catppuccin-latte/)
+# win on top.
+# Installed by omarchy-setup; edit the cream values below to taste.
+
+mode = "light"
+
+accent = "#1e66f5"
+selection = "#ddd5bd"
+muted = "#ccc5b2"
+
+# Cream backgrounds (were #eff1f5 / #e3e4e8 / #d7d8dc / #dce0e8)
+background = "#f7eecf"
+dark_background = "#ebe2c4"
+darker_background = "#dfd6b9"
+lighter_background = "#f0e4c4"
+
+foreground = "#4c4f69"
+dark_foreground = "#9ca0b0"
+light_foreground = "#5c5f77"
+bright_foreground = "#4c4f69"
+
+red = "#d20f39"
+yellow = "#df8e1d"
+orange = "#d84e2b"
+green = "#40a02b"
+cyan = "#179299"
+blue = "#1e66f5"
+magenta = "#ea76cb"
+brown = "#6c2715"
+
+bright_red = "#d20f39"
+bright_yellow = "#df8e1d"
+bright_green = "#40a02b"
+bright_cyan = "#179299"
+bright_blue = "#1e66f5"
+bright_magenta = "#ea76cb"

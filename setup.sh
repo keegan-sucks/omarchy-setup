@@ -19,12 +19,16 @@ ROULETTE_ID="io.github.keegan-sucks.wallpaper-roulette"
 ROULETTE_REPO="https://github.com/keegan-sucks/omarchy-wallpaper-roulette"
 FLOWSTATE_REPO="https://github.com/keegan-sucks/omarchy-flowstate"
 
-# Cream Rosé Pine overlay: warms the stock light backgrounds into cream so they
-# are easier on the eyes. Installed as a same-slug user theme that wins on top
-# of the stock theme when rose-pine is applied.
+# Cream overlays: warm the stock light-theme backgrounds into cream so they are
+# easier on the eyes. Each is installed as a same-slug user theme that wins on
+# top of the stock theme when that theme is applied.
+# Format: "theme-slug|Display Name" (the display name is what `omarchy theme
+# current` prints, used to decide whether to re-apply now).
 SETUP_RAW_BASE="https://raw.githubusercontent.com/keegan-sucks/omarchy-setup/main"
-THEME_OVERLAY_REL="themes/rose-pine/colors.toml"
-THEME_OVERLAY_DEST="$HOME/.config/omarchy/themes/rose-pine/colors.toml"
+THEME_OVERLAYS=(
+  "rose-pine|Rose Pine"
+  "catppuccin-latte|Catppuccin Latte"
+)
 
 # Community plugins: "repo-url|id|label"
 PLUGINS=(
@@ -120,35 +124,45 @@ HOOK
   rm -rf "$tmpd"
 }
 
-# ---- 1c. cream Rosé Pine overlay ------------------------------------------
+# ---- 1c. cream light-theme overlays ---------------------------------------
 
-install_theme_overlay() {
-  step "Installing cream Rosé Pine overlay"
-  # Source it from the local clone when run that way, else fetch from the repo
-  # (the setup.sh curl one-liner has no sibling files).
-  local src="" script_dir
+install_theme_overlays() {
+  step "Installing cream light-theme overlays"
+  local script_dir current
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
-  [[ -n $script_dir && -f "$script_dir/$THEME_OVERLAY_REL" ]] && src="$script_dir/$THEME_OVERLAY_REL"
+  current="$(omarchy theme current 2>/dev/null)"
 
-  mkdir -p "$(dirname "$THEME_OVERLAY_DEST")"
-  if [[ -n $src ]]; then
-    cp -f "$src" "$THEME_OVERLAY_DEST"
-  elif ! curl -fsSL "$SETUP_RAW_BASE/$THEME_OVERLAY_REL" -o "$THEME_OVERLAY_DEST"; then
-    warn "Could not fetch the cream Rosé Pine overlay"; return 1
-  fi
-  ok "themes/rose-pine/colors.toml (cream backgrounds)"
+  local entry slug name rel dest src
+  for entry in "${THEME_OVERLAYS[@]}"; do
+    IFS='|' read -r slug name <<<"$entry"
+    rel="themes/$slug/colors.toml"
+    dest="$HOME/.config/omarchy/themes/$slug/colors.toml"
 
-  # Re-apply so it takes effect now when rose-pine is the active theme; otherwise
-  # it applies automatically the next time Rosé Pine is selected.
-  if [[ "$(omarchy theme current 2>/dev/null)" == "Rose Pine" ]]; then
-    if omarchy theme set rose-pine >/dev/null 2>&1; then
-      ok "Applied to the active Rosé Pine theme"
-    else
-      warn "Installed; apply it with: omarchy theme set rose-pine"
+    # Source from the local clone when run that way, else fetch from the repo
+    # (the setup.sh curl one-liner has no sibling files).
+    src=""
+    [[ -n $script_dir && -f "$script_dir/$rel" ]] && src="$script_dir/$rel"
+
+    mkdir -p "$(dirname "$dest")"
+    if [[ -n $src ]]; then
+      cp -f "$src" "$dest"
+    elif ! curl -fsSL "$SETUP_RAW_BASE/$rel" -o "$dest"; then
+      warn "Could not fetch the cream $name overlay"; continue
     fi
-  else
-    skip "Applies the next time you select Rosé Pine"
-  fi
+    ok "$rel (cream backgrounds)"
+
+    # Re-apply so it takes effect now when this is the active theme; otherwise
+    # it applies automatically the next time the theme is selected.
+    if [[ "$current" == "$name" ]]; then
+      if omarchy theme set "$slug" >/dev/null 2>&1; then
+        ok "Applied to the active $name theme"
+      else
+        warn "Installed; apply it with: omarchy theme set $slug"
+      fi
+    else
+      skip "Applies the next time you select $name"
+    fi
+  done
 }
 
 # ---- 1d. make the top bar opaque ------------------------------------------
@@ -325,7 +339,7 @@ main() {
   printf '%s Omarchy setup for keegan-sucks %s\n' "$c_blue" "$c_off"
   install_wallpapers
   install_prune_hook
-  install_theme_overlay
+  install_theme_overlays
   set_bar_opaque
   install_roulette
   install_flowstate
