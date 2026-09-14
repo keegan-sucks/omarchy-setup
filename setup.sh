@@ -30,6 +30,16 @@ THEME_OVERLAYS=(
   "catppuccin-latte|Catppuccin Latte"
 )
 
+# Idle timeouts (seconds since idle began), written into shell.json. Twice the
+# Omarchy defaults (150 / 300): screensaver after 5 min, lock after 10 min.
+IDLE_SCREENSAVER_SECONDS=300
+IDLE_LOCK_SECONDS=600
+
+# Watcher that ends the terminal screensaver on mouse movement (the stock one
+# only exits on keyboard input). Installed to ~/.local/bin and autostarted.
+WATCH_REL="bin/omarchy-screensaver-mouse-watch"
+WATCH_DEST="$HOME/.local/bin/omarchy-screensaver-mouse-watch"
+
 # Community plugins: "repo-url|id|label"
 PLUGINS=(
   "https://github.com/thisisgm/omarchy-pods|io.github.thisisgm.omapods|AirPods (omapods)"
@@ -188,6 +198,38 @@ set_bar_opaque() {
   fi
 }
 
+# ---- 1e. idle timeouts ----------------------------------------------------
+
+set_idle_timeouts() {
+  step "Setting idle timeouts (screensaver ${IDLE_SCREENSAVER_SECONDS}s, lock ${IDLE_LOCK_SECONDS}s)"
+  local shell_json="$HOME/.config/omarchy/shell.json"
+  if [[ ! -f $shell_json ]]; then
+    mkdir -p "$(dirname "$shell_json")"
+    printf '{\n  "version": 1,\n  "idle": {\n    "screensaver": %d,\n    "lock": %d\n  }\n}\n' \
+      "$IDLE_SCREENSAVER_SECONDS" "$IDLE_LOCK_SECONDS" > "$shell_json"
+    ok "Created shell.json with screensaver=${IDLE_SCREENSAVER_SECONDS}s lock=${IDLE_LOCK_SECONDS}s"
+    return 0
+  fi
+  local cur_ss cur_lock
+  cur_ss="$(jq -r '.idle.screensaver // empty' "$shell_json" 2>/dev/null)"
+  cur_lock="$(jq -r '.idle.lock // empty' "$shell_json" 2>/dev/null)"
+  if [[ $cur_ss == "$IDLE_SCREENSAVER_SECONDS" && $cur_lock == "$IDLE_LOCK_SECONDS" ]]; then
+    skip "Idle timeouts already screensaver=${IDLE_SCREENSAVER_SECONDS}s lock=${IDLE_LOCK_SECONDS}s"
+    return 0
+  fi
+  local tmp; tmp="$(mktemp)"
+  if jq --argjson s "$IDLE_SCREENSAVER_SECONDS" --argjson l "$IDLE_LOCK_SECONDS" \
+        '.idle = (.idle // {}) | .idle.screensaver = $s | .idle.lock = $l' \
+        "$shell_json" > "$tmp" 2>/dev/null && [[ -s $tmp ]]; then
+    cp "$shell_json" "$shell_json.bak.$(date +%s)"
+    mv "$tmp" "$shell_json"
+    ok "idle.screensaver=${IDLE_SCREENSAVER_SECONDS}s, idle.lock=${IDLE_LOCK_SECONDS}s"
+  else
+    rm -f "$tmp"
+    warn "Could not set idle timeouts (edit shell.json by hand)"
+  fi
+}
+
 # ---- plugin install helper ------------------------------------------------
 
 plugin_installed() { omarchy plugin list --json 2>/dev/null | jq -e --arg id "$1" 'any(.[]; .id == $id)' >/dev/null 2>&1; }
@@ -332,6 +374,49 @@ LUA
   hyprctl reload >/dev/null 2>&1 || true
 }
 
+# ---- 9. screensaver mouse-dismiss watcher ---------------------------------
+
+install_screensaver_mouse_watch() {
+  step "Installing screensaver mouse-dismiss watcher"
+  # Source it from the local clone when run that way, else fetch from the repo
+  # (the setup.sh curl one-liner has no sibling files).
+  local src="" script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
+  [[ -n $script_dir && -f "$script_dir/$WATCH_REL" ]] && src="$script_dir/$WATCH_REL"
+
+  mkdir -p "$(dirname "$WATCH_DEST")"
+  if [[ -n $src ]]; then
+    cp -f "$src" "$WATCH_DEST"
+  elif ! curl -fsSL "$SETUP_RAW_BASE/$WATCH_REL" -o "$WATCH_DEST"; then
+    warn "Could not fetch the screensaver mouse watcher"; return 1
+  fi
+  chmod 755 "$WATCH_DEST"
+  ok "${WATCH_DEST/#$HOME/\~}"
+
+  # Autostart it once per Hyprland session. Absolute path so it resolves
+  # regardless of the compositor's PATH.
+  local autostart="$HOME/.config/hypr/autostart.lua"
+  if [[ -f $autostart ]] && grep -qF 'omarchy-screensaver-mouse-watch' "$autostart"; then
+    skip "autostart.lua already launches the watcher"
+  else
+    mkdir -p "$(dirname "$autostart")"
+    [[ -f $autostart ]] && cp "$autostart" "$autostart.bak.$(date +%s)"
+    printf '\n-- Added by omarchy-setup: end the screensaver on any mouse movement.\no.launch_on_start("%s")\n' \
+      "$WATCH_DEST" >> "$autostart"
+    ok "Added watcher to autostart.lua"
+  fi
+
+  # Start it now so it works this session without a Hyprland restart. Anchor the
+  # match on the script name so pgrep can't match its own command line.
+  if pgrep -f 'omarchy-screensaver-mouse-watch$' >/dev/null 2>&1; then
+    skip "Watcher already running"
+  else
+    setsid nohup "$WATCH_DEST" >/dev/null 2>&1 < /dev/null &
+    disown 2>/dev/null || true
+    ok "Started watcher for this session"
+  fi
+}
+
 # ---- run ------------------------------------------------------------------
 
 main() {
@@ -341,11 +426,13 @@ main() {
   install_prune_hook
   install_theme_overlays
   set_bar_opaque
+  set_idle_timeouts
   install_roulette
   install_flowstate
   setup_browser
   install_community_plugins
   configure_steam
+  install_screensaver_mouse_watch
   omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
   step "Done"
   printf '%sReload the bar if widgets are not visible:%s omarchy restart shell\n' "$c_dim" "$c_off"
