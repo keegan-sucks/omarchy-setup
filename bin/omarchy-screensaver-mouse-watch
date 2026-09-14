@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+# omarchy-screensaver-mouse-watch — end the Omarchy screensaver on mouse movement.
+#
+# Installed by omarchy-setup. The stock screensaver (omarchy-screensaver) is a
+# terminal TUI whose dismissal loop only reads keyboard bytes (`read -n1`); the
+# terminal never forwards pointer motion because mouse reporting is off, so a
+# mouse move never ends the screensaver even though its own comment claims it
+# should. This watcher closes that gap without touching any read-only system
+# file: it blocks on the Hyprland event stream until the screensaver window
+# opens, then polls the cursor position and ends the screensaver the moment the
+# pointer moves. Ending the window makes Omarchy's idle service treat it as a
+# dismissal and wake the system (its closewindow handler runs
+# omarchy-system-wake), so no lock fires either.
+#
+# Autostarted once per Hyprland session via o.launch_on_start(...) in
+# ~/.config/hypr/autostart.lua. While no screensaver is up it blocks on the
+# event socket at zero cost; it only polls the cursor while the screensaver is
+# actually on screen.
+
+set -uo pipefail
+
+MOVE_THRESHOLD=3     # pixels; ignore sub-pixel jitter
+POLL_INTERVAL=0.1    # seconds between cursor samples while the screensaver is up
+
+screensaver_running() { pgrep -f '[o]rg.omarchy.screensaver' >/dev/null 2>&1; }
+
+# Prints "X Y" (space separated) or nothing on failure.
+cursor_xy() {
+  local p
+  p="$(hyprctl cursorpos 2>/dev/null)" || return 1   # e.g. "3001, 79"
+  printf '%s' "${p//,/ }"
+}
+
+end_screensaver() {
+  pkill -x ttfx 2>/dev/null
+  pkill -f '[o]rg.omarchy.screensaver' 2>/dev/null
+}
+
+# Polls the cursor until it moves past the threshold (then ends the screensaver)
+# or the screensaver goes away on its own (keyboard dismissal, focus loss).
+watch_until_move() {
+  screensaver_running || return 0
+  local sx sy cx cy dx dy
+  read -r sx sy <<<"$(cursor_xy)"
+  [[ $sx =~ ^-?[0-9]+$ && $sy =~ ^-?[0-9]+$ ]] || { sx=0; sy=0; }
+  while screensaver_running; do
+    read -r cx cy <<<"$(cursor_xy)"
+    if [[ $cx =~ ^-?[0-9]+$ && $cy =~ ^-?[0-9]+$ ]]; then
+      dx=$(( cx - sx )); dy=$(( cy - sy ))
+      if (( dx*dx + dy*dy >= MOVE_THRESHOLD*MOVE_THRESHOLD )); then
+        end_screensaver
+        return 0
+      fi
+    fi
+    sleep "$POLL_INTERVAL"
+  done
+}
+
+main() {
+  local sig="${HYPRLAND_INSTANCE_SIGNATURE:-}"
+  [[ -n $sig ]] || exit 0
+  command -v socat >/dev/null 2>&1 || exit 0
+  local socket="${XDG_RUNTIME_DIR:-/run/user/$UID}/hypr/$sig/.socket2.sock"
+
+  while :; do
+    if [[ -S $socket ]]; then
+      # A screensaver openwindow event looks like:
+      #   openwindow>>ADDRESS,WORKSPACE,org.omarchy.screensaver,TITLE
+      while IFS= read -r line; do
+        case $line in
+          openwindow\>\>*,org.omarchy.screensaver,*) watch_until_move ;;
+        esac
+      done < <(socat -U - "UNIX-CONNECT:$socket" 2>/dev/null)
+    fi
+    # Socket gone (Hyprland restart) or socat exited — pause, then retry.
+    sleep 2
+  done
+}
+
+main "$@"
