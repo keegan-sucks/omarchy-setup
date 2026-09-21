@@ -17,7 +17,6 @@ WALLPAPER_REPO="https://github.com/keegan-sucks/wallpaper.git"
 BG_DEST="$HOME/.config/omarchy/backgrounds"
 ROULETTE_ID="io.github.keegan-sucks.wallpaper-roulette"
 ROULETTE_REPO="https://github.com/keegan-sucks/omarchy-wallpaper-roulette"
-FLOWSTATE_REPO="https://github.com/keegan-sucks/omarchy-flowstate"
 
 # Cream overlays: warm the stock light-theme backgrounds into cream so they are
 # easier on the eyes. Each is installed as a same-slug user theme that wins on
@@ -40,12 +39,22 @@ IDLE_LOCK_SECONDS=600
 WATCH_REL="bin/omarchy-screensaver-mouse-watch"
 WATCH_DEST="$HOME/.local/bin/omarchy-screensaver-mouse-watch"
 
-# Community plugins: "repo-url|id|label"
+# Blur strength for the lock screen wallpaper (Omarchy's stock value is 128,
+# which smears the wallpaper into a flat color). Lower = sharper.
+LOCK_BLUR_MAX=16
+
+# Plugins: "repo-url|id|label" (Wallpaper Roulette is installed separately
+# because it also needs configuring).
 PLUGINS=(
+  "https://github.com/keegan-sucks/omarchy-flowstate|io.github.keegan-sucks.flowstate|Flowstate"
   "https://github.com/thisisgm/omarchy-pods|io.github.thisisgm.omapods|AirPods (omapods)"
   "https://github.com/keegan-sucks/rss-feeder|io.github.keegan-sucks.rss-feeder|RSS-Feeder"
   "https://github.com/keegan-sucks/omarchy-lookup|io.github.keegan-sucks.lookup|Look Up"
   "https://github.com/ierror/menuvitals|io.github.ierror.menuvitals|MenuVitals"
+  "https://github.com/dlpwaters/omarchy-ebook-reader|io.github.dlpwaters.ebook-reader|Leaf Reader"
+  "https://github.com/crmne/omatasks|crmne.todoist|OmaTasks for Todoist"
+  "https://github.com/robzolkos/omarchy-github|robzolkos.github|GitHub"
+  "https://github.com/crmne/omarchy-hyprmoncfg|crmne.hyprmoncfg|hyprmoncfg"
 )
 
 IMG_GLOB=(-iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.gif' -o -iname '*.bmp' -o -iname '*.webp')
@@ -275,13 +284,6 @@ install_roulette() {
   fi
 }
 
-# ---- 3. flowstate ---------------------------------------------------------
-
-install_flowstate() {
-  step "Installing Flowstate"
-  add_plugin "$FLOWSTATE_REPO" "io.github.keegan-sucks.flowstate" "Flowstate"
-}
-
 # ---- 4. firefox over chromium ---------------------------------------------
 
 setup_browser() {
@@ -314,10 +316,10 @@ setup_browser() {
   fi
 }
 
-# ---- 5-7. community plugins ----------------------------------------------
+# ---- plugins ---------------------------------------------------------------
 
-install_community_plugins() {
-  step "Installing AirPods, RSS-Feeder, Look Up, and MenuVitals plugins"
+install_plugins() {
+  step "Installing plugins"
   local entry url id label
   for entry in "${PLUGINS[@]}"; do
     IFS='|' read -r url id label <<<"$entry"
@@ -325,7 +327,42 @@ install_community_plugins() {
   done
 }
 
-# ---- 8. steam: sane UI scale + tiled main window -------------------------
+# ---- lock screen: show the wallpaper behind the password box --------------
+
+configure_lock_screen() {
+  step "Lock screen: lightly blurred wallpaper behind the password box"
+  # The stock lock screen already draws the current wallpaper, but blurs it so
+  # hard it reads as a flat color. Built-in plugins can't be edited in place, so
+  # clone the lock plugin (the clone survives Omarchy updates) and soften the
+  # blur there. Patching the clone, rather than shipping a copy of LockView.qml,
+  # keeps whatever else upstream has changed.
+  local lock_id="${USER:-$(id -un)}.lock"
+  local view="$HOME/.config/omarchy/plugins/$lock_id/LockView.qml"
+  if [[ ! -f $view ]]; then
+    if ! omarchy plugin clone omarchy.lock >/dev/null 2>&1 || [[ ! -f $view ]]; then
+      warn "Could not clone the lock plugin (omarchy plugin clone omarchy.lock)"
+      return 1
+    fi
+    ok "Cloned omarchy.lock to $lock_id"
+  fi
+  if grep -qE "^[[:space:]]*blurMax: $LOCK_BLUR_MAX\$" "$view"; then
+    skip "Lock screen blur already $LOCK_BLUR_MAX"
+    return 0
+  fi
+  if ! grep -qE '^[[:space:]]*blurMax: [0-9]+$' "$view"; then
+    warn "LockView.qml has no blurMax to patch — upstream changed; edit ${view/#$HOME/\~} by hand"
+    return 1
+  fi
+  sed -i -E \
+    -e "s/^([[:space:]]*blurMax: )[0-9]+\$/\1$LOCK_BLUR_MAX/" \
+    -e '/^[[:space:]]*(blurMultiplier|contrast): /d' "$view"
+  ok "blurMax = $LOCK_BLUR_MAX"
+  # The lock service deliberately survives plugin hot-reloads, so only a shell
+  # restart picks up the new view.
+  LOCK_NEEDS_RESTART=1
+}
+
+# ---- steam: sane UI scale + tiled main window -------------------------
 
 configure_steam() {
   step "Configuring Steam window (UI scale + tiled main window)"
@@ -374,7 +411,7 @@ LUA
   hyprctl reload >/dev/null 2>&1 || true
 }
 
-# ---- 9. screensaver mouse-dismiss watcher ---------------------------------
+# ---- screensaver mouse-dismiss watcher ---------------------------------
 
 install_screensaver_mouse_watch() {
   step "Installing screensaver mouse-dismiss watcher"
@@ -428,14 +465,18 @@ main() {
   set_bar_opaque
   set_idle_timeouts
   install_roulette
-  install_flowstate
+  install_plugins
+  configure_lock_screen
   setup_browser
-  install_community_plugins
   configure_steam
   install_screensaver_mouse_watch
   omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
   step "Done"
-  printf '%sReload the bar if widgets are not visible:%s omarchy restart shell\n' "$c_dim" "$c_off"
+  if [[ -n ${LOCK_NEEDS_RESTART:-} ]]; then
+    printf '%sRestart the shell to apply the new lock screen:%s omarchy restart shell\n' "$c_dim" "$c_off"
+  else
+    printf '%sReload the bar if widgets are not visible:%s omarchy restart shell\n' "$c_dim" "$c_off"
+  fi
   printf '%sNotes:%s AirPods needs its own one-time setup (see the plugin README).\n' "$c_dim" "$c_off"
   printf '%s       %s Fully restart Steam (%ssteam -shutdown%s) for the new UI scale to apply.\n' "$c_dim" "$c_off" "$c_dim" "$c_off"
 }
