@@ -37,28 +37,39 @@ your password.
 4. **Opaque top bar** — sets `bar.transparent = false` in `shell.json`. A
    transparent bar renders its icons over the wallpaper, which makes them
    unreadable on light themes; a solid themed background keeps them visible.
-5. **[Wallpaper Roulette](https://github.com/keegan-sucks/omarchy-wallpaper-roulette)** —
-   installs the plugin and points it at your wallpapers, rotating every 30
-   minutes and switching the theme to match each wallpaper.
-6. **[Flowstate](https://github.com/keegan-sucks/omarchy-flowstate)** — installs
-   the focus-timer plugin.
-7. **Firefox over Chromium** — ensures Firefox is installed and the default
-   browser, removes Chromium-backed web apps (Discord, etc.), and removes
-   Chromium if present.
-8. **Community plugins** — installs
+5. **Idle timeouts** — screensaver after 5 minutes, lock after 10 (twice the
+   Omarchy defaults).
+6. **Plugins** — installs
+   [Wallpaper Roulette](https://github.com/keegan-sucks/omarchy-wallpaper-roulette)
+   (pointed at your wallpapers, rotating every 30 minutes and switching the
+   theme to match),
+   [Flowstate](https://github.com/keegan-sucks/omarchy-flowstate) (focus timer),
    [AirPods](https://github.com/thisisgm/omarchy-pods),
    [RSS-Feeder](https://github.com/keegan-sucks/rss-feeder) (my fork of
-   [rss-reeder](https://github.com/sanjyay/rss-reeder), with YouTube Shorts
-   filtering and per-feed category editing),
-   [Look Up](https://github.com/keegan-sucks/omarchy-lookup) (macOS-style
-   dictionary popup — select a word, hit a hotkey, see its definition; ships
-   Webster's 1913 offline), and
-   [MenuVitals](https://github.com/ierror/menuvitals).
-7. **Steam window** — writes `~/.config/hypr/steam.lua` to pin Steam's desktop
+   [rss-reeder](https://github.com/sanjyay/rss-reeder)),
+   [Look Up](https://github.com/keegan-sucks/omarchy-lookup) (dictionary popup),
+   [MenuVitals](https://github.com/ierror/menuvitals) (system vitals),
+   [Leaf Reader](https://github.com/dlpwaters/omarchy-ebook-reader) (ebooks),
+   [OmaTasks for Todoist](https://github.com/crmne/omatasks),
+   [GitHub](https://github.com/robzolkos/omarchy-github) (notifications inbox),
+   and [hyprmoncfg](https://github.com/crmne/omarchy-hyprmoncfg) (monitor
+   profiles).
+7. **Lock screen wallpaper** — the stock lock screen blurs the wallpaper into a
+   flat color. This clones the lock plugin (`omarchy plugin clone omarchy.lock`)
+   and drops the blur to a light one, so the current background shows behind
+   the password box. Needs `omarchy restart shell` to apply. Reversible:
+   `omarchy plugin remove $USER.lock`.
+8. **Firefox over Chromium** — ensures Firefox is installed and the default
+   browser, removes Chromium-backed web apps (Discord, etc.), and removes
+   Chromium if present.
+9. **Steam window** — writes `~/.config/hypr/steam.lua` to pin Steam's desktop
    UI scale (Omarchy lets it auto-inflate on the HiDPI laptop panel) and tile
    the main window instead of the stock small floating box. Restart Steam
    afterwards for the new scale to apply; adjust the scale in the file or in
    Steam > Settings > Accessibility.
+10. **Screensaver mouse dismiss** — installs and autostarts a small watcher
+    that ends the screensaver on mouse movement (stock only exits on a key
+    press).
 
 AirPods needs a one-time setup of its own — see the plugin's README.
 
