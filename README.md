@@ -14,8 +14,8 @@ git clone https://github.com/keegan-sucks/omarchy-setup
 ./omarchy-setup/setup.sh
 ```
 
-Run it in a terminal — installing or removing Firefox/Chromium may prompt for
-your password.
+Run it in a terminal — installing or removing packages (Brave, Chromium,
+kdenlive) may prompt for your password.
 
 ## What it does
 
@@ -59,9 +59,25 @@ your password.
    and drops the blur to a light one, so the current background shows behind
    the password box. Needs `omarchy restart shell` to apply. Reversible:
    `omarchy plugin remove $USER.lock`.
-8. **Firefox over Chromium** — ensures Firefox is installed and the default
-   browser, removes Chromium-backed web apps (Discord, etc.), and removes
-   Chromium if present.
+8. **Brave Origin as the browser** — installs
+   [Brave Origin](https://brave.com/origin/) (`omarchy install browser
+   brave-origin`) and makes it the default for everything Omarchy routes
+   through the browser: `omarchy launch browser`, web apps (`--app=` windows),
+   the http/https/html handlers, plus `mailto:` and `webcal:`. Any handler in
+   `mimeapps.list` still naming Firefox, Chromium, omamail or HEY is pointed at
+   Brave Origin. Then removes Firefox, Chromium and kdenlive if present
+   (nothing else depends on them), the stale omamail launcher, and
+   `~/.config/chromium-flags.conf`.
+8b. **Stock web apps** — removes the stock web-app launchers that only ever get
+   opened in a normal browser tab here: Google Contacts, Google Maps, Google
+   Messages, Google Photos, HEY, WhatsApp, X and YouTube. Basecamp, Discord,
+   Tailscale and Zoom stay. Re-add any of them with `omarchy webapp install`.
+8c. **Web-app keybindings** — the stock `SUPER + SHIFT + ...` bindings for
+   those sites (and ChatGPT/Grok) would relaunch them as Brave web apps, so
+   they are unbound by appending `hl.unbind(...)` lines to
+   `~/.config/hypr/bindings.lua`. Core bindings and the other preinstalled app
+   bindings (Obsidian, Spotify, Docker, tmux, ...) are untouched. Delete a line
+   from that block to get a binding back.
 9. **Steam window** — writes `~/.config/hypr/steam.lua` to pin Steam's desktop
    UI scale (Omarchy lets it auto-inflate on the HiDPI laptop panel) and tile
    the main window instead of the stock small floating box. Restart Steam

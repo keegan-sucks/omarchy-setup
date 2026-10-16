@@ -7,7 +7,7 @@
 # or:  git clone https://github.com/keegan-sucks/omarchy-setup && ./omarchy-setup/setup.sh
 #
 # Every step is idempotent — re-running only fixes what's missing. Run it in a
-# terminal: installing/removing packages (Firefox/Chromium) may prompt for sudo.
+# terminal: installing/removing packages (Brave/Chromium/kdenlive) may prompt for sudo.
 
 set -uo pipefail
 
@@ -284,35 +284,132 @@ install_roulette() {
   fi
 }
 
-# ---- 4. firefox over chromium ---------------------------------------------
+# ---- 4. brave origin over firefox / chromium -------------------------------
+
+# Stock Omarchy web apps that only ever get opened in a normal browser tab here.
+# Removing the launcher drops them from the app menu; the matching stock
+# keybindings are unbound in unbind_webapp_keys below.
+WEBAPPS_REMOVE=(
+  "Google Contacts" "Google Maps" "Google Messages" "Google Photos"
+  "HEY" "WhatsApp" "X" "YouTube"
+)
+
+# Stock packages with no place on this machine. Nothing else depends on them
+# (pacman -Rns only removes dependencies that become orphans).
+PACKAGES_REMOVE=(chromium kdenlive)
+
+# Stock web-app keybindings to drop ("KEYS|label"). They would relaunch the apps
+# above as Brave web apps. Core bindings and the other preinstalled app bindings
+# (Obsidian, Spotify, Docker, tmux, ...) are left alone.
+WEBAPP_UNBIND=(
+  "SUPER + SHIFT + A|ChatGPT"
+  "SUPER + SHIFT + ALT + A|Grok"
+  "SUPER + SHIFT + C|HEY Calendar"
+  "SUPER + SHIFT + E|HEY Email"
+  "SUPER + SHIFT + ALT + E|HEY New email"
+  "SUPER + SHIFT + Y|YouTube"
+  "SUPER + SHIFT + ALT + G|WhatsApp"
+  "SUPER + SHIFT + CTRL + G|Google Messages"
+  "SUPER + SHIFT + P|Google Photos"
+  "SUPER + SHIFT + S|Google Maps"
+  "SUPER + SHIFT + X|X"
+  "SUPER + SHIFT + ALT + X|X Post"
+)
 
 setup_browser() {
-  step "Firefox as the browser (removing Chromium)"
-  if command -v firefox >/dev/null 2>&1 || pacman -Q firefox >/dev/null 2>&1; then
-    skip "Firefox already installed"
+  step "Brave Origin as the browser (replacing Firefox / Chromium)"
+  if pacman -Q brave-origin-bin >/dev/null 2>&1; then
+    skip "Brave Origin already installed"
   else
-    omarchy-install-browser firefox && ok "Installed Firefox" || warn "Firefox install failed"
+    if omarchy-install-browser brave-origin; then ok "Installed Brave Origin"; else warn "Brave Origin install failed"; return 1; fi
   fi
-  if [[ "$(omarchy-default-browser 2>/dev/null)" == "firefox" ]]; then
-    skip "Firefox already the default browser"
+  if [[ "$(omarchy-default-browser 2>/dev/null)" == "brave-origin" ]]; then
+    skip "Brave Origin already the default browser"
   else
-    omarchy-default-browser firefox >/dev/null 2>&1 && ok "Firefox set as default" || warn "Could not set default browser"
+    omarchy-default-browser brave-origin >/dev/null 2>&1 && ok "Brave Origin set as default" || warn "Could not set default browser"
   fi
-  # Chromium-backed web apps (Discord, etc.) break without Chromium — remove them.
-  local before after
-  before="$(find "$HOME/.local/share/applications" -maxdepth 1 -name '*.desktop' 2>/dev/null | wc -l)"
-  omarchy-webapp-remove-all >/dev/null 2>&1 || true
-  after="$(find "$HOME/.local/share/applications" -maxdepth 1 -name '*.desktop' 2>/dev/null | wc -l)"
-  if (( before > after )); then ok "Removed $((before - after)) Chromium web app(s)"; else skip "No Chromium web apps to remove"; fi
-  # Remove Chromium itself if present.
-  if pacman -Q chromium >/dev/null 2>&1; then
-    if omarchy-remove-browser chromium >/dev/null 2>&1 || omarchy pkg remove chromium >/dev/null 2>&1; then
-      ok "Removed Chromium"
+
+  # xdg-settings only rewrites the http/https/html handlers. Point every other
+  # browser-ish handler at Brave too: anything still naming a browser or mail
+  # launcher that is gone (Firefox, Chromium, omamail, HEY), plus mailto/webcal.
+  local mime="$HOME/.config/mimeapps.list"
+  if [[ -f $mime ]] && grep -qE '=.*(firefox|chromium|omamail|HEY)\.desktop' "$mime"; then
+    # Replace the whole value: a line can list several handlers separated by ';'.
+    sed -i -E 's/^([^=#]+)=.*(firefox|chromium|omamail|HEY)\.desktop.*$/\1=brave-origin.desktop/' "$mime"
+    ok "Pointed stale handlers in mimeapps.list at Brave Origin"
+  fi
+  local scheme
+  for scheme in mailto webcal; do
+    if [[ "$(xdg-mime query default "x-scheme-handler/$scheme" 2>/dev/null)" == "brave-origin.desktop" ]]; then
+      skip "$scheme: already Brave Origin"
     else
-      warn "Chromium is installed but removal failed — run: omarchy remove browser chromium"
+      xdg-mime default brave-origin.desktop "x-scheme-handler/$scheme" && ok "$scheme: Brave Origin" || warn "Could not set $scheme handler"
     fi
+  done
+
+  # omamail (a mail plugin tried briefly) leaves a launcher behind that points at
+  # a script which no longer exists; it was also the mailto handler.
+  local stale="$HOME/.local/share/applications/omamail.desktop"
+  if [[ -f $stale && ! -x "$HOME/.config/omarchy/plugins/omamail/scripts/mailto.sh" ]]; then
+    rm -f "$stale" && ok "Removed stale omamail launcher"
+  fi
+
+  if pacman -Q firefox >/dev/null 2>&1; then
+    omarchy-remove-browser firefox >/dev/null 2>&1 && ok "Removed Firefox" || warn "Firefox is installed but removal failed - run: omarchy remove browser firefox"
   else
-    skip "Chromium not installed"
+    skip "Firefox not installed"
+  fi
+
+  local pkg present=()
+  for pkg in "${PACKAGES_REMOVE[@]}"; do pacman -Q "$pkg" >/dev/null 2>&1 && present+=("$pkg"); done
+  if (( ${#present[@]} )); then
+    if omarchy-pkg-drop "${present[@]}"; then ok "Removed ${present[*]}"; else warn "Removal failed - run: sudo pacman -Rns ${present[*]}"; fi
+  else
+    skip "None of ${PACKAGES_REMOVE[*]} installed"
+  fi
+  rm -f "$HOME/.config/chromium-flags.conf"
+  update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
+}
+
+# ---- 4b. stock web apps -----------------------------------------------------
+
+remove_webapps() {
+  step "Removing stock web apps that live in a browser tab instead"
+  local app n=0 dir="$HOME/.local/share/applications"
+  for app in "${WEBAPPS_REMOVE[@]}"; do
+    [[ -f "$dir/$app.desktop" ]] || continue
+    if OMARCHY_REMOVE_NOTIFY=false omarchy-webapp-remove "$app" >/dev/null 2>&1; then
+      ok "Removed $app"; n=$((n + 1))
+    else
+      warn "Could not remove $app"
+    fi
+  done
+  (( n == 0 )) && skip "Nothing to remove"
+}
+
+unbind_webapp_keys() {
+  step "Unbinding the stock web-app keybindings"
+  local f="$HOME/.config/hypr/bindings.lua"
+  local marker="-- omarchy-setup: stock web-app bindings"
+  # "--" leads the marker, so hand it to grep as a pattern, not an option.
+  if grep -qF -- "$marker" "$f" 2>/dev/null; then
+    skip "Already unbound in hypr/bindings.lua"
+    return
+  fi
+  [[ -f $f ]] && cp "$f" "$f.bak.$(date +%s)"
+  {
+    printf '\n%s (these sites open in a Brave tab instead).\n' "$marker"
+    printf '%s\n' "-- Delete a line to get that stock binding back."
+    local entry
+    for entry in "${WEBAPP_UNBIND[@]}"; do
+      printf 'hl.unbind("%s") -- %s\n' "${entry%%|*}" "${entry#*|}"
+    done
+  } >> "$f"
+  ok "Appended unbinds to hypr/bindings.lua"
+  if command -v hyprctl >/dev/null 2>&1 && [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]]; then
+    hyprctl reload >/dev/null 2>&1 || true
+    local errs; errs="$(hyprctl configerrors 2>/dev/null)"
+    [[ -z $errs || $errs == *"No errors"* ]] && ok "Hyprland config reloaded" || warn "Hyprland config errors: $errs"
   fi
 }
 
@@ -468,6 +565,8 @@ main() {
   install_plugins
   configure_lock_screen
   setup_browser
+  remove_webapps
+  unbind_webapp_keys
   configure_steam
   install_screensaver_mouse_watch
   omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
