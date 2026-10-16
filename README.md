@@ -65,13 +65,26 @@ kdenlive) may prompt for your password.
    through the browser: `omarchy launch browser`, web apps (`--app=` windows),
    the http/https/html handlers, plus `mailto:` and `webcal:`. Any handler in
    `mimeapps.list` still naming Firefox, Chromium, omamail or HEY is pointed at
-   Brave Origin. Then removes Firefox, Chromium and kdenlive if present
-   (nothing else depends on them), the stale omamail launcher, and
+   Brave Origin. Then removes Firefox, Chromium, kdenlive and moonlight-qt if
+   present (nothing else depends on them), the stale omamail launcher, and
    `~/.config/chromium-flags.conf`.
+8a. **Brave extensions** — writes an `ExtensionSettings` policy to
+   `/etc/brave/policies/managed/omarchy-setup-extensions.json` (needs sudo) so
+   Brave installs uBlock Origin, Bitwarden, Raindrop.io, Video Download Helper
+   and Monarch Money by itself, including into a fresh profile. They are
+   `normal_installed`: you can still disable one from `brave://extensions`, but
+   a new profile gets it again. Edit the `BRAVE_EXTENSIONS` list in `setup.sh`
+   (Chrome Web Store ids) to change the set. Reversible: delete the policy
+   file. Web Store extensions update from Google's CRX endpoint, the same one
+   Brave already uses for any store install. Verified on a fresh profile: the
+   four Manifest V3 extensions install within about a minute. uBlock Origin is
+   Manifest V2 and stays out until `"ExtensionManifestV2Availability": 2` is
+   added to the policy file by hand (it re-enables MV2 browser-wide, so the
+   script does not do that for you).
 8b. **Stock web apps** — removes the stock web-app launchers that only ever get
    opened in a normal browser tab here: Google Contacts, Google Maps, Google
-   Messages, Google Photos, HEY, WhatsApp, X and YouTube. Basecamp, Discord,
-   Tailscale and Zoom stay. Re-add any of them with `omarchy webapp install`.
+   Messages, Google Photos, HEY, WhatsApp, X, YouTube, Zoom and Basecamp.
+   Discord and Tailscale stay. Re-add any of them with `omarchy webapp install`.
 8c. **Web-app keybindings** — the stock `SUPER + SHIFT + ...` bindings for
    those sites (and ChatGPT/Grok) would relaunch them as Brave web apps, so
    they are unbound by appending `hl.unbind(...)` lines to
