@@ -291,12 +291,32 @@ install_roulette() {
 # keybindings are unbound in unbind_webapp_keys below.
 WEBAPPS_REMOVE=(
   "Google Contacts" "Google Maps" "Google Messages" "Google Photos"
-  "HEY" "WhatsApp" "X" "YouTube"
+  "HEY" "WhatsApp" "X" "YouTube" "Zoom" "Basecamp"
 )
 
 # Stock packages with no place on this machine. Nothing else depends on them
 # (pacman -Rns only removes dependencies that become orphans).
-PACKAGES_REMOVE=(chromium kdenlive)
+PACKAGES_REMOVE=(chromium kdenlive moonlight-qt)
+
+# Brave extensions, "chrome-web-store-id|label". Installed through Brave's
+# managed policy directory (the same one Omarchy writes its theme color to), so
+# a fresh profile gets them on first launch. "normal_installed" means Brave
+# installs them itself but you can still disable one from brave://extensions.
+# uBlock Origin is a Manifest V2 extension: it only installs by policy when
+# "ExtensionManifestV2Availability": 2 is also set in the policy file, which
+# this script deliberately leaves to you (it re-enables MV2 browser-wide).
+# Without it the other four install and uBO has to be added from the store.
+BRAVE_EXTENSIONS=(
+  "jcokkipkhhgiakinbnnplhkdbjbgcgpe|uBlock Origin"
+  "nngceckbapebfimnlniiiahkandclblb|Bitwarden Password Manager"
+  "ldgfbffkinooeloadekpmfoklnobpien|Raindrop.io"
+  "lmjnegcaeklhafolokijcfjliaokphfk|Video Download Helper"
+  "imfcckkmcklambpijbgcebggegggkgla|Monarch Money"
+)
+BRAVE_POLICY_FILE="/etc/brave/policies/managed/omarchy-setup-extensions.json"
+# Web Store extensions update from Google's CRX endpoint; Brave uses the same
+# URL when you install one from the store, so this adds no new contact.
+CRX_UPDATE_URL="https://clients2.google.com/service/update2/crx"
 
 # Stock web-app keybindings to drop ("KEYS|label"). They would relaunch the apps
 # above as Brave web apps. Core bindings and the other preinstalled app bindings
@@ -369,6 +389,38 @@ setup_browser() {
   fi
   rm -f "$HOME/.config/chromium-flags.conf"
   update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
+}
+
+# ---- 4a. brave extensions ---------------------------------------------------
+
+install_brave_extensions() {
+  step "Brave extensions (managed policy)"
+  local tmp; tmp="$(mktemp)"
+  {
+    printf '{\n  "ExtensionSettings": {\n'
+    local i entry id
+    for i in "${!BRAVE_EXTENSIONS[@]}"; do
+      entry="${BRAVE_EXTENSIONS[$i]}"; id="${entry%%|*}"
+      printf '    "%s": { "installation_mode": "normal_installed", "update_url": "%s" }' "$id" "$CRX_UPDATE_URL"
+      (( i < ${#BRAVE_EXTENSIONS[@]} - 1 )) && printf ','
+      printf '\n'
+    done
+    printf '  }\n}\n'
+  } > "$tmp"
+  if cmp -s "$tmp" "$BRAVE_POLICY_FILE" 2>/dev/null; then
+    skip "Policy already lists ${#BRAVE_EXTENSIONS[@]} extensions"
+    rm -f "$tmp"; return
+  fi
+  if sudo install -D -m 644 "$tmp" "$BRAVE_POLICY_FILE"; then
+    ok "Wrote $BRAVE_POLICY_FILE (${#BRAVE_EXTENSIONS[@]} extensions)"
+  else
+    warn "Could not write $BRAVE_POLICY_FILE (needs sudo)"
+  fi
+  rm -f "$tmp"
+  # A running Brave picks the policy up on its next launch; nudge it now.
+  if pgrep -f /opt/brave-origin-bin/ >/dev/null 2>&1; then
+    brave-origin --refresh-platform-policy --no-startup-window >/dev/null 2>&1 || true
+  fi
 }
 
 # ---- 4b. stock web apps -----------------------------------------------------
@@ -565,6 +617,7 @@ main() {
   install_plugins
   configure_lock_screen
   setup_browser
+  install_brave_extensions
   remove_webapps
   unbind_webapp_keys
   configure_steam
