@@ -603,6 +603,42 @@ install_screensaver_mouse_watch() {
   fi
 }
 
+# ---- plain caps lock ----------------------------------------------------
+
+configure_caps_lock() {
+  step "Making Caps Lock a plain Caps Lock key"
+  # Omarchy's stock input.lua sets kb_options to "compose:caps,shift:both_capslock_cancel":
+  # the Caps Lock key becomes the Compose key (tap it, then e ' for é) and real
+  # Caps Lock moves to pressing both Shifts at once. Override it with an empty
+  # kb_options in the user input.lua, which loads after the defaults, so the
+  # key labeled Caps Lock just toggles caps again. Delete the block to get the
+  # stock behaviour back.
+  local f="$HOME/.config/hypr/input.lua"
+  local marker="-- omarchy-setup: plain Caps Lock"
+  # "--" leads the marker, so hand it to grep as a pattern, not an option.
+  if grep -qF -- "$marker" "$f" 2>/dev/null; then
+    skip "Already set in hypr/input.lua"
+    return
+  fi
+  mkdir -p "$(dirname "$f")"
+  [[ -f $f ]] && cp "$f" "$f.bak.$(date +%s)"
+  {
+    printf '\n%s (drops the stock "compose:caps,shift:both_capslock_cancel").\n' "$marker"
+    printf '%s\n' "-- Delete this block to get the Compose key / both-Shifts Caps Lock back."
+    printf '%s\n' 'hl.config({'
+    printf '%s\n' '  input = {'
+    printf '%s\n' '    kb_options = "",'
+    printf '%s\n' '  },'
+    printf '%s\n' '})'
+  } >> "$f"
+  ok "Appended kb_options override to hypr/input.lua"
+  if command -v hyprctl >/dev/null 2>&1 && [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]]; then
+    hyprctl reload >/dev/null 2>&1 || true
+    local errs; errs="$(hyprctl configerrors 2>/dev/null)"
+    [[ -z $errs || $errs == *"No errors"* ]] && ok "Hyprland config reloaded" || warn "Hyprland config errors: $errs"
+  fi
+}
+
 # ---- run ------------------------------------------------------------------
 
 main() {
@@ -621,6 +657,7 @@ main() {
   remove_webapps
   unbind_webapp_keys
   configure_steam
+  configure_caps_lock
   install_screensaver_mouse_watch
   omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
   step "Done"

@@ -99,6 +99,11 @@ kdenlive) may prompt for your password.
 10. **Screensaver mouse dismiss** — installs and autostarts a small watcher
     that ends the screensaver on mouse movement (stock only exits on a key
     press).
+11. **Plain Caps Lock** — Omarchy makes the Caps Lock key the Compose key
+    (tap it, then `e` `'` for é) and moves real Caps Lock to pressing both
+    Shifts at once. This appends an empty `kb_options` override to
+    `~/.config/hypr/input.lua` so Caps Lock just toggles caps again. Delete
+    that block to get the stock behaviour back.
 
 AirPods needs a one-time setup of its own — see the plugin's README.
 
