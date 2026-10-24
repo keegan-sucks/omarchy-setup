@@ -104,6 +104,12 @@ kdenlive) may prompt for your password.
     Shifts at once. This appends an empty `kb_options` override to
     `~/.config/hypr/input.lua` so Caps Lock just toggles caps again. Delete
     that block to get the stock behaviour back.
+12. **Claude Code as the default agent** — writes `claude` to
+    `~/.config/omarchy/defaults/agent` so the stock agent launcher (menu +
+    keybinding) opens Claude Code. Omarchy ships with no default agent, so
+    without this nothing launches. Stock `omarchy-agent` then starts Claude
+    in `~/Work` (where the Obsidian vault lives). Reversible: `omarchy
+    default agent <name>` or delete the file.
 
 AirPods needs a one-time setup of its own — see the plugin's README.
 
