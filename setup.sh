@@ -641,6 +641,22 @@ configure_caps_lock() {
 
 # ---- run ------------------------------------------------------------------
 
+setup_agent() {
+  step "Claude Code as the default coding agent"
+  # Write the defaults/agent file directly rather than calling
+  # `omarchy-default-agent claude`: that command execs omarchy-agent (opens a
+  # terminal) and may run an install, neither of which belongs in setup.sh.
+  # This is exactly the line that command writes, so the menu/keybinding
+  # launch Claude (stock omarchy-agent then cd's into ~/Work, the vault).
+  local agent_file="$HOME/.config/omarchy/defaults/agent"
+  if [[ "$(cat "$agent_file" 2>/dev/null)" == "claude" ]]; then
+    skip "Claude already the default agent"
+  else
+    mkdir -p "$(dirname "$agent_file")"
+    printf 'claude\n' >"$agent_file" && ok "Claude set as the default coding agent" || warn "Could not set default agent"
+  fi
+}
+
 main() {
   require_omarchy
   printf '%s Omarchy setup for keegan-sucks %s\n' "$c_blue" "$c_off"
@@ -658,6 +674,7 @@ main() {
   unbind_webapp_keys
   configure_steam
   configure_caps_lock
+  setup_agent
   install_screensaver_mouse_watch
   omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
   step "Done"
