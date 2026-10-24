@@ -657,6 +657,38 @@ setup_agent() {
   fi
 }
 
+setup_claude_menu() {
+  step "Claude entry on the Omarchy menu (SUPER + SPACE)"
+  # Stock Omarchy has no "launch the agent" item on the menu or in the app
+  # grid (only the SUPER+SHIFT+CTRL+A keybinding and the agent *picker* under
+  # Setup). Add one deliberate "Claude" entry to the user's menu extension so
+  # SUPER+SPACE can launch it. The action is the stock omarchy-agent, which
+  # cd's into ~/Work (the vault).
+  local ext="$HOME/.config/omarchy/extensions/omarchy-menu.jsonc"
+  local entry='  "claude": {"icon":"󰛄","label":"Claude","description":"Claude Code (opens in ~/Work)","action":"omarchy-agent"}'
+  if [[ -f $ext ]] && grep -q '"claude"[[:space:]]*:' "$ext"; then
+    skip "Claude menu entry already present"
+    return
+  fi
+  mkdir -p "$(dirname "$ext")"
+  if [[ ! -f $ext ]]; then
+    printf '{\n%s\n}\n' "$entry" >"$ext" && ok "Created menu extension with the Claude entry" || warn "Could not create $ext"
+    return
+  fi
+  # File exists without a claude entry: splice ours in before the final '}',
+  # preserving comments. Add a comma only when a real member precedes it.
+  if command -v python3 >/dev/null && python3 - "$ext" "$entry" <<'PY'
+import sys, io
+path, entry = sys.argv[1], sys.argv[2]
+s = io.open(path, encoding="utf-8").read()
+i = s.rfind("}")
+head = s[:i].rstrip()
+sep = "," if head and head[-1] not in "{," else ""
+io.open(path, "w", encoding="utf-8").write(head + sep + "\n" + entry + "\n}\n")
+PY
+  then ok "Added the Claude menu entry"; else warn "Could not edit $ext — add the \"claude\" entry by hand"; fi
+}
+
 main() {
   require_omarchy
   printf '%s Omarchy setup for keegan-sucks %s\n' "$c_blue" "$c_off"
@@ -675,6 +707,7 @@ main() {
   configure_steam
   configure_caps_lock
   setup_agent
+  setup_claude_menu
   install_screensaver_mouse_watch
   omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
   step "Done"

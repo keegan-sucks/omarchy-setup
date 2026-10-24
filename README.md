@@ -110,6 +110,12 @@ kdenlive) may prompt for your password.
     without this nothing launches. Stock `omarchy-agent` then starts Claude
     in `~/Work` (where the Obsidian vault lives). Reversible: `omarchy
     default agent <name>` or delete the file.
+13. **Claude on the Omarchy menu** — stock has no "launch the agent"
+    item on the menu or app grid (just the `SUPER + SHIFT + CTRL + A`
+    keybinding). Adds a single **Claude** entry to
+    `~/.config/omarchy/extensions/omarchy-menu.jsonc` that runs
+    `omarchy-agent`, so `SUPER + SPACE` → Claude opens it in `~/Work`.
+    Reversible: remove the `claude` key from that file.
 
 AirPods needs a one-time setup of its own — see the plugin's README.
 
